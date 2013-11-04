@@ -1,0 +1,42 @@
+THE BLOB LIBRARY:
+
+BLOB is wizardly. 
+BLOB is life. 
+BLOB is a single class.
+BLOB is a flexible container that operates on arbitrarily nested Maps, Lists, Sets, and primitives.  
+BLOB is an API for reading/writing/manipulating YAML/JSON files.
+
+YAML is a spiffy, lightweight markup language that makes the kind of flexible,
+easy-to-read configuration files that make XML users feel bad about themselves.
+However, because YAML produces nested object collections that are difficult to
+navigate in a statically-typed language, it was not until the PROMETHIAN INVENTION 
+of BLOB that the full POWER OF YAML was given unto mankind.
+
+This library combines SnakeYAML, an open-source YAML library, with BLOB,
+a custom data container class. SnakeYAML provides a means for reading and writing to 
+YAML files, while BLOB provides THE MOST CONVENIENT  means for manipulating such data
+KNOWN TO MAN OR WOMAN! In the distribution jar, SnakeYAML and BLOB are combined into a 
+single library for convenience. While this would normally be considered horrible practice, 
+there is LITERALLY NO REASON IN THE WORLD to use SnakeYAML without BLOB. 
+
+YAML is a superset of JSON. YOU CAN USE THIS LIBRARY TO READ JSON FILES.
+
+
+SEE ALSO:
+The Blob documentation in Blob.java.
+The online documentation for SnakeYAML.
+The online specification for YAML.
+
+
+LICENSES:
+SnakeYAML is a third-party library.  It's license should be located at 
+"lib/snakeyaml/SNAKEYAML_LICENSE".  This license also gets baked into 
+the jar file.
+
+
+BUGS:
+BLOB IS WITHOUT BUG!
+
+
+MAINTAINED BY:
+Philip DeCamp
