@@ -48,7 +48,7 @@ public class Blob {
     private static final Object ADD_KEY = new Object();
 
     /** 
-     * Determines how many null items to add to list before just transforming it into a Map to convserve memory.
+     * Specifies max number of NULL items to add to a list before converting it to a Map to conserve memory.
      * IE, don't create a list with 1,000,000,000 entries just to hold the key "Integer( 1000000000 )". 
      */
     private static final int MAX_LIST_PADDING = 100;
@@ -74,8 +74,7 @@ public class Blob {
      * If the root is not a container, it will not be possible to add additional
      * data items to the Blob without losing this piece of data.
      * 
-     * @param root
-     *            Data to be held by the Blob.
+     * @param root  Data to be held by the Blob.
      */
     public Blob( Object root ) {
         mRoot = deblob( root );
@@ -83,12 +82,11 @@ public class Blob {
         mPosition = null;
     }
 
-
+    
     Blob( Blob parent, Object[] position, Object root ) {
         mRoot = root;
         mParent = parent;
-        mPosition = new Object[position.length];
-        System.arraycopy( position, 0, mPosition, 0, position.length );
+        mPosition = position.clone();
     }
 
 
@@ -118,9 +116,9 @@ public class Blob {
      * @returns true if all keys are contained in the Blob.
      */
     public boolean containsKey( Object... keys ) {
-        if( keys.length == 0 )
+        if( keys.length == 0 ) {
             return get( null, 0, 0 ) != null;
-
+        }
         Object data = get( keys, 0, keys.length - 1 );
         return objectContainsKey( data, keys[keys.length - 1] );
     }
@@ -147,9 +145,9 @@ public class Blob {
      * @returns true if the
      */
     public boolean containsValue( Object... keysAndValue ) {
-        if( keysAndValue == null || keysAndValue.length == 0 )
+        if( keysAndValue == null || keysAndValue.length == 0 ) {
             return false;
-
+        }
         Object data = get( keysAndValue, 0, keysAndValue.length - 1 );
         return objectContainsValue( data, keysAndValue[keysAndValue.length - 1] );
     }
@@ -176,83 +174,83 @@ public class Blob {
     public Object get( Object... keys ) {
         return get( keys, 0, keys.length );
     }
-
+    
     /**
      * Retrieves and casts a single object from the Blob if the object exists
      * and belongs to the specified class.
      * 
-     * @param clazz
-     *            Class type for the object to retrieve.
-     * @param keys
-     *            Keys for object.
+     * @param clazz  Class type for the object to retrieve.
+     * @param keys   Keys for object.
      * @returns The object associated with the keys if that object exists and
      *          belongs to the specified class. Otherwise, null.
-     * 
      */
-    public <S> S get( Class<S> clazz, Object... keys ) {
+    public <S> S getType( Class<S> clazz, Object... keys ) {
         Object data = get( keys, 0, keys.length );
         return clazz.isInstance( data ) ? (S)data : null;
     }
 
-
-    public Map<?, ?> getMap( Object... keys ) {
-        Object o = get( keys );
-        if( o instanceof Map )
-            return (Map<?, ?>)o;
-
-        return null;
+    
+    public Map<?,?> getMap( Object... keys ) {
+        Object item = get( keys );
+        return (item instanceof Map) ? (Map<?,?>)item : null; 
     }
 
 
     public List<?> getList( Object... keys ) {
-        Object o = get( keys );
-        if( o instanceof List )
-            return (List<?>)o;
-
-        return null;
+        Object item = get( keys );
+        return (item instanceof List) ? (List<?>)item : null;
     }
 
 
     public Set<?> getSet( Object... keys ) {
-        Object o = get( keys );
-        if( o instanceof Set )
-            return (Set<?>)o;
-
-        return null;
+        Object item = get( keys );
+        return (item instanceof Set) ? (Set<?>)item : null;
     }
 
 
     public String getString( Object... keys ) {
-        Object o = get( keys );
-        if( o instanceof String )
-            return (String)o;
-
-        return null;
+        Object item = get( keys );
+        return (item instanceof String) ? (String)item : null;
     }
 
 
     public Boolean getBoolean( Object... keys ) {
-        Object o = get( keys );
-        if( o instanceof Boolean )
-            return (Boolean)o;
-
-        if( o == null )
+        Object item = get( keys );
+        if( item instanceof Boolean ) {
+            return (Boolean)item;
+        }
+        
+        if( item == null ) {
             return null;
+        }
 
-        if( o instanceof Number )
-            return new Boolean( ((Number)o).doubleValue() != 0 );
-
-        if( o instanceof String ) {
-            String s = ((String)o).toLowerCase();
-            if( s.startsWith( "t" ) ) {
-                return s.length() == 1 || s.startsWith( "true" );
-            } else if( s.startsWith( "y" ) ) {
-                return s.length() == 1 || s.startsWith( "yes" );
-            } else if( s.equals( "on" ) ) {
-                return Boolean.TRUE;
+        if( item instanceof String ) {
+            String s = (String)item;
+            int len = s.length();
+            if( len == 0 ) {
+                return Boolean.FALSE;
             }
-
+            
+            switch( s.charAt( 0 ) ) {
+            case 'y':
+            case 'Y':
+                if( len == 1 || len >= 3 && s.substring( 0, 3 ).equalsIgnoreCase( "yes" ) ) {
+                    return Boolean.TRUE;
+                }
+                break;
+            case 't':
+            case 'T':
+                if( len == 1 || len >= 4 && s.substring( 0, 4 ).equalsIgnoreCase( "true" ) ) {
+                    return Boolean.TRUE;
+                }
+                break;
+            }
+            
             return Boolean.FALSE;
+        }
+        
+        if( item instanceof Number ) {
+            return new Boolean( ((Number)item).doubleValue() != 0 );
         }
 
         return null;
@@ -260,135 +258,132 @@ public class Blob {
 
 
     public Integer getInt( Object... keys ) {
-        Object o = get( keys );
-
-        if( o instanceof Integer )
-            return (Integer)o;
-
-        if( o instanceof Number )
-            return new Integer( ((Number)o).intValue() );
+        Object item = get( keys );
+        if( item instanceof Integer ) {
+            return (Integer)item;
+        }
+        if( item instanceof Number ) {
+            return new Integer( ((Number)item).intValue() );
+        }
 
         return null;
     }
 
 
     public Long getLong( Object... keys ) {
-        Object o = get( keys );
-
-        if( o instanceof Long )
-            return (Long)o;
-
-        if( o instanceof Number )
-            return new Long( ((Number)o).longValue() );
+        Object item = get( keys );
+        if( item instanceof Long ) {
+            return (Long)item;
+        }
+        if( item instanceof Number ) {
+            return new Long( ((Number)item).longValue() );
+        }
 
         return null;
     }
 
 
     public Float getFloat( Object... keys ) {
-        Object o = get( keys );
-
-        if( o instanceof Float )
-            return (Float)o;
-
-        if( o instanceof Number )
-            return new Float( ((Number)o).floatValue() );
+        Object item = get( keys );
+        if( item instanceof Float ) {
+            return (Float)item;
+        }
+        if( item instanceof Number ) {
+            return new Float( ((Number)item).floatValue() );
+        }
 
         return null;
     }
 
 
     public Double getDouble( Object... keys ) {
-        Object o = get( keys );
-        if( o instanceof Double )
-            return (Double)o;
-
-        if( o instanceof Number )
-            return new Double( ((Number)o).doubleValue() );
+        Object item = get( keys );
+        if( item instanceof Double ) {
+            return (Double)item;
+        }
+        if( item instanceof Number ) {
+            return new Double( ((Number)item).doubleValue() );
+        }
 
         return null;
     }
-
 
     /**
      * Like <tt>getString()</tt>, but returns a default value if no non-null
      * value is found.
      * 
-     * @param defaultReturn
+     * @param defaultVal
      * @param keys
      * @return
      */
-    public String tryGetString( String defaultReturn, Object... keys ) {
-        Object o = get( keys );
-        if( o instanceof String )
-            return (String)o;
-
-        return defaultReturn;
+    public String tryGetString( String defaultVal, Object... keys ) {
+        Object item = get( keys );
+        return ( item instanceof String ) ? (String)item : defaultVal;
     }
 
     /**
      * Like <tt>getBoolean()</tt>, but returns a default value if no non-null
      * value is found.
      * 
-     * @param defaultReturn
+     * @param defaultVal
      * @param keys
      * @return
      */
-    public boolean tryGetBoolean( boolean defaultReturn, Object... keys ) {
+    public boolean tryGetBoolean( boolean defaultVal, Object... keys ) {
         Boolean b = getBoolean( keys );
-        return (b == null ? defaultReturn : b);
+        return b != null ? b : defaultVal;
     }
 
     /**
      * Like <tt>getInt()</tt>, but returns a default value if no non-null value
      * is found.
      * 
-     * @param defaultReturn
+     * @param defaultVal
      * @param keys
      * @return
      */
-    public int tryGetInt( int defaultReturn, Object... keys ) {
+    public int tryGetInt( int defaultVal, Object... keys ) {
         Integer ret = getInt( keys );
-        return (ret == null ? defaultReturn : ret);
+        return ret != null ? ret : defaultVal;
     }
 
     /**
      * Like <tt>getLong()</tt>, but returns a default value if no non-null value
      * is found.
      * 
-     * @param defaultReturn
+     * @param defaultVal
      * @param keys
      * @return
      */
-    public long tryGetLong( long defaultReturn, Object... keys ) {
+    public long tryGetLong( long defaultVal, Object... keys ) {
         Long ret = getLong( keys );
-        return (ret == null ? defaultReturn : ret);
+        return ret != null ? ret : defaultVal;
     }
 
     /**
      * Like <tt>getFloat()</tt>, but returns a default value if no non-null
      * value is found.
      * 
-     * @param defaultReturn
+     * @param defaultVal
      * @param keys
      * @return
      */
-    public float tryGetFloat( float defaultReturn, Object... keys ) {
+    public float tryGetFloat( float defaultVal, Object... keys ) {
         Float ret = getFloat( keys );
-        return (ret == null ? defaultReturn : ret);
+        return ret != null ? ret : defaultVal;
     }
 
     /**
      * Like <tt>getDouble()</tt>, but returns a default value if no non-null
      * value is found.
      * 
-     * @param defaultReturn
+     * @param defaultVal
      * @param keys
      * @return
      */
-    public double tryGetDouble( double defaultReturn, Object... keys ) {
+    public double tryGetDouble( double defaultVal, Object... keys ) {
         Double ret = getDouble( keys );
-        return (ret == null ? defaultReturn : ret);
+        return ret != null ? defaultVal : ret;
     }
 
     /**
@@ -403,14 +398,13 @@ public class Blob {
      * If the keys specify a <code>set</code>, then no key needs will be
      * implied, and the value will simply be added.
      * 
-     * @param keysAndValue
-     *            Arbitrary sequence of keys followed by a value.
+     * @param keysAndValue Arbitrary sequence of keys followed by a value.
      * @return true iff Blob is modified as a result.
      */
     public boolean add( Object... keysAndValue ) {
-        if( keysAndValue.length == 0 )
+        if( keysAndValue.length == 0 ) {
             return false;
-
+        }
         return add( keysAndValue, 0, keysAndValue.length - 1, deblob( keysAndValue[keysAndValue.length - 1] ) );
     }
 
@@ -435,14 +429,13 @@ public class Blob {
      * converted to a Map, where every item that was in the Set will be placed
      * in the new Map using itself as a key.
      * 
-     * @param keysAndValue
-     *            Arbitrary sequence of keys followed by a value.
+     * @param keysAndValue Arbitrary sequence of keys followed by a value.
      * @return value that was previously located at specified key sequence
      */
     public Object put( Object... keysAndValue ) {
-        if( keysAndValue.length == 0 )
+        if( keysAndValue.length == 0 ) {
             return null;
-
+        }
         return put( keysAndValue, 0, keysAndValue.length - 1, deblob( keysAndValue[keysAndValue.length - 1] ) );
     }
 
@@ -497,20 +490,39 @@ public class Blob {
      * @returns a Blob that acts as a view of a subset of this Blob.
      */
     public Blob slice( Object... keys ) {
-        Object o = get( keys );
-        return new Blob( this, keys, o );
+        Object item = get( keys );
+        return new Blob( this, keys, item );
     }
 
+    /**
+     * If this blob is a slice view, this method can be used to get the
+     * slice's path. While use of this method is discouraged as it 
+     * breaks the slice abstraction, it can be useful when you really
+     * need the absolute path to a value, particularly when constructing
+     * error messages.
+     * 
+     * @return keys used to select this slice.
+     */
+    public Object[] sliceKeys() {
+        return mPosition == null ? new Object[0] : mPosition.clone();
+    }
+    
+    /**
+     * If this blob is a slice view, this method can be used to get the
+     * parent blob. Use of this method is discouraged.
+     */
+    public Blob sliceParent() {
+        return mParent;
+    }
+    
 
     public Set<?> keySet( Object... keys ) {
-        Object o = get( keys );
+        Object item = get( keys );
 
-        if( o instanceof Map ) {
-            return ((Map<?, ?>)o).keySet();
-
-        } else if( o instanceof List ) {
-            return new ListIndexSet( (List<?>)o );
-
+        if( item instanceof Map ) {
+            return ((Map<?, ?>)item).keySet();
+        } else if( item instanceof List ) {
+            return new ListIndexSet( (List<?>)item );
         }
 
         return Collections.emptySet();
@@ -518,13 +530,13 @@ public class Blob {
 
 
     public Set<Map.Entry<?, ?>> entrySet( Object... keys ) {
-        Object o = get( keys );
+        Object item = get( keys );
 
-        if( o instanceof Map ) {
-            return ((Map)o).entrySet();
+        if( item instanceof Map ) {
+            return ((Map)item).entrySet();
 
-        } else if( o instanceof List ) {
-            return new ListEntrySet( (List<?>)o );
+        } else if( item instanceof List ) {
+            return new ListEntrySet( (List<?>)item );
         }
 
         return Collections.emptySet();
@@ -532,16 +544,16 @@ public class Blob {
 
 
     public Collection<?> values( Object... keys ) {
-        Object o = get( keys );
+        Object item = get( keys );
 
-        if( o instanceof Map ) {
-            return ((Map)o).values();
+        if( item instanceof Map ) {
+            return ((Map)item).values();
 
-        } else if( o instanceof List ) {
-            return (List)o;
-
-        } else if( o instanceof Set ) {
-            return (Set)o;
+        } else if( item instanceof List ) {
+            return (List)item;
+        
+        } else if( item instanceof Set ) {
+            return (Set)item;
 
         }
 
@@ -557,17 +569,27 @@ public class Blob {
 
     public String toString() {
         StringBuilder b = new StringBuilder();
-        print( b, "" );
+        format( "", b );
         return b.toString();
     }
-
-
-    public String toYamlString() {
+    
+    
+    public void format( String indent, StringBuilder out ) {
+        if( indent == null ) {
+            indent = "";
+        }
+        out.append( indent );
+        out.append( "Blob: " );
+        print( mRoot, out, indent + "  " );
+    }
+    
+    
+    public String toYaml() {
         return new Yaml().dump( mRoot );
     }
 
 
-    public String toJsonString() {
+    public String toJson() {
         StringBuilder builder = new StringBuilder();
         try {
             json( this, builder );
@@ -577,36 +599,24 @@ public class Blob {
         }
         return builder.toString();
     }
-
-
-    public void print( StringBuilder buf, String indent ) {
-        if( indent == null )
-            indent = "";
-
-        buf.append( indent );
-        buf.append( "Blob: " );
-        print( mRoot, buf, indent + "  " );
-    }
-
-
-    public void saveToYaml( File outputFile ) throws IOException {
+    
+    
+    public void writeYaml( File outputFile ) throws IOException {
         Writer out = new BufferedWriter( new FileWriter( outputFile ) );
-        saveToYaml( new FileWriter( outputFile ) );
+        writeYaml( new FileWriter( outputFile ) );
         out.close();
     }
 
 
-    public void saveToYaml( Writer writer ) throws IOException {
+    public void writeYaml( Writer writer ) throws IOException {
         new Yaml().dump( mRoot, writer );
     }
 
 
-
-    public static Blob loadFromYaml( File inputFile ) throws IOException {
+    public static Blob readYaml( File inputFile ) throws IOException {
         Reader reader = new FileReader( inputFile );
-
         try {
-            return loadFromYaml( reader );
+            return readYaml( reader );
         } finally {
             try {
                 reader.close();
@@ -615,14 +625,14 @@ public class Blob {
     }
 
 
-    public static Blob loadFromYaml( URL url ) throws IOException {
+    public static Blob readYaml( URL url ) throws IOException {
         URLConnection conn = null;
         InputStream in = null;
 
         try {
             conn = url.openConnection();
             in = conn.getInputStream();
-            return loadFromYaml( new BufferedReader( new InputStreamReader( in ) ) );
+            return readYaml( new BufferedReader( new InputStreamReader( in ) ) );
         } finally {
             try {
                 if( in != null ) {
@@ -633,115 +643,18 @@ public class Blob {
     }
 
 
-    public static Blob loadFromYaml( Reader reader ) throws IOException {
+    public static Blob readYaml( Reader reader ) throws IOException {
         Iterator<Object> iter = new Yaml().loadAll( reader ).iterator();
-
-        if( !iter.hasNext() )
+        if( !iter.hasNext() ) {
             return null;
+        }
 
         return new Blob( iter.next() );
     }
 
 
-    public static Blob loadFromYaml( String yamlText ) throws IOException {
+    public static Blob readYaml( String yamlText ) throws IOException {
         return new Blob( new Yaml().load( yamlText ) );
-    }
-
-
-
-    // **************************************************************
-    // Deprecated methods.
-    // **************************************************************
-
-
-    /**
-     * @deprecated use tryGetString()
-     */
-    public String getNonNullString( String defaultReturn, Object... keys ) {
-        Object o = get( keys );
-        if( o instanceof String )
-            return (String)o;
-
-        return defaultReturn;
-    }
-
-    /**
-     * @deprecated use tryGetBoolean()
-     */
-    public Boolean getNonNullBoolean( Boolean defaultReturn, Object... keys ) {
-        Boolean b = getBoolean( keys );
-        return (b == null ? defaultReturn : b);
-    }
-
-    /**
-     * @deprecated use tryGetInt()
-     */
-    public Integer getNonNullInt( Integer defaultReturn, Object... keys ) {
-        Integer ret = getInt( keys );
-        return (ret == null ? defaultReturn : ret);
-    }
-
-    /**
-     * @deprecated use tryGetLong()
-     */
-    public Long getNonNullLong( Long defaultReturn, Object... keys ) {
-        Long ret = getLong( keys );
-        return (ret == null ? defaultReturn : ret);
-    }
-
-    /**
-     * @deprecated use tryGetFloat()
-     */
-    public Float getNonNullFloat( Float defaultReturn, Object... keys ) {
-        Float ret = getFloat( keys );
-        return (ret == null ? defaultReturn : ret);
-    }
-
-    /**
-     * @deprecated use tryGetDouble()
-     */
-    public Double getNonNullDouble( Double defaultReturn, Object... keys ) {
-        Double ret = getDouble( keys );
-        return (ret == null ? defaultReturn : ret);
-    }
-
-    /**
-     * @deprecated Use values(keys).iterator() instead.
-     * 
-     *             <p>
-     *             Gets iterator over values at a location in the blob. Iterator
-     *             stays at specified level and does not descennd. <br/>
-     *             For <i>maps</i>, equivalent to
-     *             <code>values().iterator()</code>. <br/>
-     *             For <i>collections</i>, equivalent to <code>iterator()</code>
-     *             . <br/>
-     *             Otherwise, an empty iterator is returned.
-     * 
-     * @param keys
-     *            Location in blob over which to iterate.
-     * @return iterator over values
-     */
-    public Iterator<?> iterator( Object... keys ) {
-        return values( keys ).iterator();
-    }
-
-    /**
-     * @deprecated Use entrySet(keys).iterator() instead.
-     *             <p>
-     *             Gets iterator over values at a location in the blob. Iterator
-     *             stays at specified level and does not descennd. <br/>
-     *             For <i>maps</i>, equivalent to
-     *             <code>values().iterator()</code>. <br/>
-     *             For <i>collections</i>, equivalent to <code>iterator()</code>
-     *             . <br/>
-     *             Otherwise, an empty iterator is returned.
-     * 
-     * @param keys
-     *            Location in blob over which to iterate.
-     * @return iterator over values
-     */
-    public Iterator<Map.Entry<?, ?>> entryIterator( Object... keys ) {
-        return entrySet( keys ).iterator();
     }
 
 
@@ -1523,4 +1436,162 @@ public class Blob {
 
     }
 
+
+    
+
+    // **************************************************************
+    // Deprecated graveyard.
+    // **************************************************************
+    
+    /**
+     * Retrieves and casts a single object from the Blob if the object exists
+     * and belongs to the specified class.
+     * 
+     * @param clazz  Class type for the object to retrieve.
+     * @param keys   Keys for object.
+     * @returns The object associated with the keys if that object exists and
+     *          belongs to the specified class. Otherwise, null.
+     *          
+     * @deprecated Use getType() instead. How could I have thought it was a good idea to overload a varargs method?
+     */
+    public <S> S get( Class<S> clazz, Object... keys ) {
+        Object data = get( keys, 0, keys.length );
+        return clazz.isInstance( data ) ? (S)data : null;
+    }
+
+    /**
+     * @deprecated use tryGetString()
+     */
+    public String getNonNullString( String defaultReturn, Object... keys ) {
+        Object o = get( keys );
+        if( o instanceof String )
+            return (String)o;
+
+        return defaultReturn;
+    }
+
+    /**
+     * @deprecated use tryGetBoolean()
+     */
+    public Boolean getNonNullBoolean( Boolean defaultReturn, Object... keys ) {
+        Boolean b = getBoolean( keys );
+        return (b == null ? defaultReturn : b);
+    }
+
+    /**
+     * @deprecated use tryGetInt()
+     */
+    public Integer getNonNullInt( Integer defaultReturn, Object... keys ) {
+        Integer ret = getInt( keys );
+        return (ret == null ? defaultReturn : ret);
+    }
+
+    /**
+     * @deprecated use tryGetLong()
+     */
+    public Long getNonNullLong( Long defaultReturn, Object... keys ) {
+        Long ret = getLong( keys );
+        return (ret == null ? defaultReturn : ret);
+    }
+
+    /**
+     * @deprecated use tryGetFloat()
+     */
+    public Float getNonNullFloat( Float defaultReturn, Object... keys ) {
+        Float ret = getFloat( keys );
+        return (ret == null ? defaultReturn : ret);
+    }
+
+    /**
+     * @deprecated use tryGetDouble()
+     */
+    public Double getNonNullDouble( Double defaultReturn, Object... keys ) {
+        Double ret = getDouble( keys );
+        return (ret == null ? defaultReturn : ret);
+    }
+
+    /**
+     * @deprecated Use values(keys).iterator() instead.
+     * 
+     *             <p>
+     *             Gets iterator over values at a location in the blob. Iterator
+     *             stays at specified level and does not descennd. <br/>
+     *             For <i>maps</i>, equivalent to
+     *             <code>values().iterator()</code>. <br/>
+     *             For <i>collections</i>, equivalent to <code>iterator()</code>
+     *             . <br/>
+     *             Otherwise, an empty iterator is returned.
+     * 
+     * @param keys
+     *            Location in blob over which to iterate.
+     * @return iterator over values
+     */
+    public Iterator<?> iterator( Object... keys ) {
+        return values( keys ).iterator();
+    }
+
+    /**
+     * @deprecated Use entrySet(keys).iterator() instead.
+     *             <p>
+     *             Gets iterator over values at a location in the blob. Iterator
+     *             stays at specified level and does not descennd. <br/>
+     *             For <i>maps</i>, equivalent to
+     *             <code>values().iterator()</code>. <br/>
+     *             For <i>collections</i>, equivalent to <code>iterator()</code>
+     *             . <br/>
+     *             Otherwise, an empty iterator is returned.
+     * 
+     * @param keys
+     *            Location in blob over which to iterate.
+     * @return iterator over values
+     */
+    public Iterator<Map.Entry<?, ?>> entryIterator( Object... keys ) {
+        return entrySet( keys ).iterator();
+    }
+
+    @Deprecated
+    public void print( StringBuilder buf, String indent ) {
+        format( indent, buf );
+    }
+    
+    @Deprecated
+    public String toYamlString() {
+        return toYaml();
+    }
+
+    @Deprecated
+    public String toJsonString() {
+        return toJson();
+    }
+   
+    @Deprecated
+    public void saveToYaml( File outputFile ) throws IOException {
+        writeYaml( outputFile );
+    }
+
+    @Deprecated
+    public void saveToYaml( Writer writer ) throws IOException {
+        writeYaml( writer );
+    }
+    
+    @Deprecated
+    public static Blob loadFromYaml( File inputFile ) throws IOException {
+        return readYaml( inputFile );
+    }
+
+    @Deprecated
+    public static Blob loadFromYaml( URL url ) throws IOException {
+        return readYaml( url );
+    }
+
+    @Deprecated
+    public static Blob loadFromYaml( Reader reader ) throws IOException {
+        return readYaml( reader );
+    }
+
+    @Deprecated
+    public static Blob loadFromYaml( String yamlText ) throws IOException {
+        return readYaml( yamlText );
+    }
+    
 }
