@@ -1,3 +1,8 @@
+/* 
+ * Copyright (c) 2012, Massachusetts Institute of Technology
+ * Released under the BSD 2-Clause License
+ * http://opensource.org/licenses/BSD-2-Clause 
+ */ 
 package bits.blob;
 
 import java.io.File;
@@ -19,8 +24,7 @@ public class BlobTest {
     }
 
 
-    @Test
-    public void testPut() {
+    @Test public void testPut() {
         Blob b = new Blob();
         b.put( "a", "b", "c", "happy" );
         b.put( "b", 0, 2, "sad" );
@@ -37,8 +41,7 @@ public class BlobTest {
     }
 
 
-    @Test
-    public void testAdd() {
+    @Test public void testAdd() {
         Blob b = new Blob();
         b.add( "a", "b", "c", "happy" );
         b.add( "a", "b", "d" );
@@ -50,8 +53,7 @@ public class BlobTest {
     }
 
 
-    @Test
-    public void testListPadding() {
+    @Test public void testListPadding() {
         Blob b = new Blob();
         b.put( 0, "whatever" );
         assertEquals( b.size(), 1 );
@@ -65,8 +67,7 @@ public class BlobTest {
     }
 
 
-    @Test
-    public void testRemove() {
+    @Test public void testRemove() {
         Blob b = new Blob();
         b.put( "a", "b", "c", "happy" );
         b.put( "b", -1, 2, "sad" );
@@ -78,8 +79,7 @@ public class BlobTest {
     }
 
 
-    @Test
-    public void testContains() {
+    @Test public void testContains() {
         Blob b = new Blob();
         b.put( "a", "b", "c", "happy" );
         b.put( "b", -1, 2, "sad" );
@@ -91,8 +91,7 @@ public class BlobTest {
     }
 
 
-    @Test
-    public void testRecursivePut() {
+    @Test public void testRecursivePut() {
         Blob b1 = new Blob();
         Blob b2 = new Blob();
         Blob b3 = new Blob();
@@ -116,8 +115,7 @@ public class BlobTest {
     }
 
 
-    @Test
-    public void testRecursiveAdd() {
+    @Test public void testRecursiveAdd() {
         Blob b1 = new Blob();
         Blob b2 = new Blob();
         Blob b3 = new Blob();
@@ -142,8 +140,7 @@ public class BlobTest {
     }
 
 
-    @Test
-    public void testSlice() {
+    @Test public void testSlice() {
         Blob b1 = new Blob();
         Blob b2 = b1.slice( "s", "t" );
 
@@ -161,7 +158,6 @@ public class BlobTest {
 
 
     public void testLoad() {
-
         try {
             Blob b = Blob.readYaml( new File( "lib/snakeyaml/src/test/resources/specification/example2_3.yaml" ) );
             System.out.println( b );
@@ -172,6 +168,5 @@ public class BlobTest {
         }
 
     }
-
 
 }

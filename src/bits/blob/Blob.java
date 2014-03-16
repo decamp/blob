@@ -1,3 +1,8 @@
+/* 
+ * Copyright (c) 2013, Massachusetts Institute of Technology
+ * Released under the BSD 2-Clause License
+ * http://opensource.org/licenses/BSD-2-Clause 
+ */ 
 package bits.blob;
 
 import java.util.*;
@@ -454,7 +459,6 @@ public class Blob {
 
 
     public int size( Object... keys ) {
-        Object data = get( keys );
         return objectSize( get( keys ) );
     }
 
@@ -1443,73 +1447,6 @@ public class Blob {
     // Deprecated graveyard.
     // **************************************************************
     
-    /**
-     * Retrieves and casts a single object from the Blob if the object exists
-     * and belongs to the specified class.
-     * 
-     * @param clazz  Class type for the object to retrieve.
-     * @param keys   Keys for object.
-     * @returns The object associated with the keys if that object exists and
-     *          belongs to the specified class. Otherwise, null.
-     *          
-     * @deprecated Use getType() instead. How could I have thought it was a good idea to overload a varargs method?
-     */
-    public <S> S get( Class<S> clazz, Object... keys ) {
-        Object data = get( keys, 0, keys.length );
-        return clazz.isInstance( data ) ? (S)data : null;
-    }
-
-    /**
-     * @deprecated use tryGetString()
-     */
-    public String getNonNullString( String defaultReturn, Object... keys ) {
-        Object o = get( keys );
-        if( o instanceof String )
-            return (String)o;
-
-        return defaultReturn;
-    }
-
-    /**
-     * @deprecated use tryGetBoolean()
-     */
-    public Boolean getNonNullBoolean( Boolean defaultReturn, Object... keys ) {
-        Boolean b = getBoolean( keys );
-        return (b == null ? defaultReturn : b);
-    }
-
-    /**
-     * @deprecated use tryGetInt()
-     */
-    public Integer getNonNullInt( Integer defaultReturn, Object... keys ) {
-        Integer ret = getInt( keys );
-        return (ret == null ? defaultReturn : ret);
-    }
-
-    /**
-     * @deprecated use tryGetLong()
-     */
-    public Long getNonNullLong( Long defaultReturn, Object... keys ) {
-        Long ret = getLong( keys );
-        return (ret == null ? defaultReturn : ret);
-    }
-
-    /**
-     * @deprecated use tryGetFloat()
-     */
-    public Float getNonNullFloat( Float defaultReturn, Object... keys ) {
-        Float ret = getFloat( keys );
-        return (ret == null ? defaultReturn : ret);
-    }
-
-    /**
-     * @deprecated use tryGetDouble()
-     */
-    public Double getNonNullDouble( Double defaultReturn, Object... keys ) {
-        Double ret = getDouble( keys );
-        return (ret == null ? defaultReturn : ret);
-    }
-
     /**
      * @deprecated Use values(keys).iterator() instead.
      * 
