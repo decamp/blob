@@ -388,9 +388,9 @@ public class Blob {
      */
     public double tryGetDouble( double defaultVal, Object... keys ) {
         Double ret = getDouble( keys );
-        return ret != null ? defaultVal : ret;
+        return ret != null ? ret : defaultVal;
     }
-
+    
     /**
      * This operation is identicalto put(), except that the last key is implied.
      * <p>
