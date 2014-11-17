@@ -1,68 +1,68 @@
-/* 
- * Copyright (c) 2013, Massachusetts Institute of Technology
+/*
+ * Copyright (c) 2014. Massachusetts Institute of Technology
  * Released under the BSD 2-Clause License
- * http://opensource.org/licenses/BSD-2-Clause 
- */ 
+ * http://opensource.org/licenses/BSD-2-Clause
+ */
 package bits.blob;
 
 import java.util.*;
 import java.util.Map.Entry;
 import java.io.*;
 import java.net.*;
+import java.util.regex.Pattern;
 
 import org.yaml.snakeyaml.Yaml;
 
 
 /**
  * Blob is a flexible container object that stores data as a tree. Parent nodes
- * may consist of <code>Maps</code>, <code>Lists</code>, <code>Sets</code> and
- * other <code>Blobs</code>, where the leaf nodes may be any other arbitrary
- * <code>Object</code> or <code>null</code> value.
- * <p>
- * Blob has operations for <code>get</code>, <code>put</code>, <code>add</code>,
- * <code>remove</code>, <code>containsKey</code>, <code>containsValue</code>,
- * and <code>size</code>. These methods operate at arbitrary depth by accepting
- * a key sequence as a vararg argument. Blob also has a <code>slice</code>
- * operation that will produce a subtree view of the blob, provide a convenient
- * and more efficient way to access deeply nested structures.
- * <p>
- * Most operations require, as a vararg, an array of key objects. Each key is
+ * may consist of {@link java.util.Map}s, {@link java.util.List}s,
+ * {@link java.util.Set}s and other {@code Blob}s. Leaf nodes may be any
+ * other arbitrary {@link java.lang.Object} or {@code null} value, with special
+ * support for {@link java.lang.Number}s and {@link java.lang.String}s.
+ *
+ * <p> The core of Blob are the operations for {@link #get}, {@link #put},
+ * {@link #add}, {@link #remove}, {@link #containsKey}, {@link #containsValue},
+ * and {@link #size}, which all accept a key sequence as a vararge argument and
+ * provide a convenient way for accessing deeply nested structures.
+ * Blob also has a {@link #slice} operation that will produce a subtree view of
+ * the blob.
+ *
+ * <p> Most operations require, as a vararg, an array of key objects. Each key is
  * used to navigate down one level of the Blob. For example:
- * <p>
- * <code>
- * Object obj = blob.get(1, "the", "cat");
- * </code>
- * <p>
- * Here, there are three keys. The first key is an integer, and thus it may
+ *
+ * <p>{@code Object obj = blob.get(1, "the", "cat");}</p>
+ *
+ * <p>Here, there are three keys. The first key is an integer, and thus it may
  * return a result whether the first level is a List or a Map or a Blob. The
  * next two keys are Strings. While Strings and other objects may be used as
  * keys in Maps, they are invalid keys for Lists. Thus, if the blob.get(1)
  * contains a List, the key is unusable and get(1, "the") will return null. Sets
  * do not contain keys in either form and elements must be retrieved via
  * iteration.
- * <p>
- * Blob is not thread-safe, and currently does not protect against concurrent
+ *
+ * <p> Blob is not thread-safe, and currently does not protect against concurrent
  * modifications on various views.
- * 
+ *
  * @author Philip DeCamp
  */
 @SuppressWarnings( { "unchecked", "rawtypes" } )
 public class Blob {
-    
+
     /** Unique object used internally to indicate ADD operation. */
     private static final Object ADD_KEY = new Object();
 
-    /** 
+    /**
      * Specifies max number of NULL items to add to a list before converting it to a Map to conserve memory.
-     * IE, don't create a list with 1,000,000,000 entries just to hold the key "Integer( 1000000000 )". 
+     * IE, don't create a list with 1,000,000,000 entries just to hold the key "Integer( 1000000000 )".
      */
     private static final int MAX_LIST_PADDING = 100;
-    
+
     private final Blob mParent;
     private final Object[] mPosition;
-    
+
     private Object mRoot; // Cannot be Blob object.
-    
+
 
     /**
      * Creates a new Blob that contains no data.
@@ -78,7 +78,7 @@ public class Blob {
      * Blob does not need to be a container; it may be any object or even null.
      * If the root is not a container, it will not be possible to add additional
      * data items to the Blob without losing this piece of data.
-     * 
+     *
      * @param root  Data to be held by the Blob.
      */
     public Blob( Object root ) {
@@ -87,7 +87,7 @@ public class Blob {
         mPosition = null;
     }
 
-    
+
     Blob( Blob parent, Object[] position, Object root ) {
         mRoot = root;
         mParent = parent;
@@ -95,30 +95,29 @@ public class Blob {
     }
 
 
-    
+
     // **************************************************************
     // Core Operations
     // **************************************************************
 
     /**
      * Checks if the key is present in the Blob.
-     * <p>
-     * Example:
-     * <p>
-     * <code>
+     *
+     * <p>Example:
+     *
+     * <p><code>
      * Blob b = new Blob(); <br>
      * b.put(3, "cat", "value"); <br>
-     * b.containsKey(3); <br>         
+     * b.containsKey(3); <br>
      * //returns true <br>
-     * b.containsKey(3, "cat"); <br>  
+     * b.containsKey(3, "cat"); <br>
      * //returns true<br>
      * b.containsKey(3, "cat", "value"); <br>
      * //returns false.
      * </code>
-     * 
-     * @param keys
-     *            - Series of keys.
-     * @returns true if all keys are contained in the Blob.
+     *
+     * @param keys  Sequence of keys.
+     * @return true if all keys are contained in the Blob.
      */
     public boolean containsKey( Object... keys ) {
         if( keys.length == 0 ) {
@@ -131,23 +130,22 @@ public class Blob {
     /**
      * Checks if a value is present in the Blob at a location specified by an
      * arbitrary list of keys.
-     * <p>
-     * Example:
-     * <p>
-     * <code>
+     *
+     * <p>Example:
+     *
+     * <p><code>
      * Blob b = new Blob(); <br>
      * b.put(3, "cat", "value"); <br>
-     * b.containsValue(3); <br>         
+     * b.containsValue(3); <br>
      * //returns false <br>
-     * b.containsValue(3, "cat"); <br>  
+     * b.containsValue(3, "cat"); <br>
      * //returns false<br>
      * b.containsValue(3, "value"); <br>
      * //returns true.
      * </code>
-     * 
-     * @param keysAndValue
-     *            - Arbitrary series of keys followed by a single value.
-     * @returns true if the
+     *
+     * @param keysAndValue Arbitrary series of keys followed by a single value.
+     * @return true if value is contained as specified level.
      */
     public boolean containsValue( Object... keysAndValue ) {
         if( keysAndValue == null || keysAndValue.length == 0 ) {
@@ -159,10 +157,10 @@ public class Blob {
 
     /**
      * Returns an object from the Blob.
-     * <p>
-     * Example:
-     * <p>
-     * <code>
+     *
+     * <p>Example:
+     *
+     * <p><code>
      * Blob b = new Blob(); <br>
      * b.put(3, "cat", "value"); <br>
      * b.get(); <br>
@@ -172,59 +170,80 @@ public class Blob {
      * b.get(3, "cat"); <br>
      * //returns "value"
      * </code>
-     * 
-     * @param keys
-     * @returns Object associated with provided keys, or null if none exists.
+     *
+     * @param keys  Key sequence
+     * @return Object associated with provided keys, or {@code null} if none exists.
      */
     public Object get( Object... keys ) {
         return get( keys, 0, keys.length );
     }
-    
+
     /**
      * Retrieves and casts a single object from the Blob if the object exists
      * and belongs to the specified class.
-     * 
+     *
      * @param clazz  Class type for the object to retrieve.
      * @param keys   Keys for object.
-     * @returns The object associated with the keys if that object exists and
-     *          belongs to the specified class. Otherwise, null.
+     * @return The object associated with the keys if that object exists and
+     *         belongs to the specified class. Otherwise, null.
      */
     public <S> S getType( Class<S> clazz, Object... keys ) {
         Object data = get( keys, 0, keys.length );
         return clazz.isInstance( data ) ? (S)data : null;
     }
 
-    
+    /**
+     * @return Associated object only if a {@link java.util.Map} object.
+     */
     public Map<?,?> getMap( Object... keys ) {
         Object item = get( keys );
-        return (item instanceof Map) ? (Map<?,?>)item : null; 
+        return (item instanceof Map) ? (Map<?,?>)item : null;
     }
 
-
+    /**
+     * @return A value only if a {@link java.util.List} object.
+     */
     public List<?> getList( Object... keys ) {
         Object item = get( keys );
         return (item instanceof List) ? (List<?>)item : null;
     }
 
-
+    /**
+     * @return A value only if a {@link java.util.Set} object.
+     */
     public Set<?> getSet( Object... keys ) {
         Object item = get( keys );
         return (item instanceof Set) ? (Set<?>)item : null;
     }
 
-
+    /**
+     * @return A value only if it is a {@link java.lang.String} object.
+     */
     public String getString( Object... keys ) {
         Object item = get( keys );
         return (item instanceof String) ? (String)item : null;
     }
 
-
+    /**
+     * Makes best effort to interpret a value as a boolean.
+     *
+     * <p>True values are True booleans, any {@link java.lang.Number} that does not equal zero, and any of the Strings
+     * "y", "yes", "t" or "true" with any case.
+     *
+     * <p>False values are False booleans, any {@link java.lang.Number} that equals zero, and any of the strings
+     * "n", "no", "f" or "false" with any case.
+     *
+     * <p>Other values are considered undefined as booleans and a {@code null} will be returned.
+     *
+     * @return true if keys are associated with a value interpretable as true, false if a value intepretabel as false,
+     *         otherwise {@code null}.
+     */
     public Boolean getBoolean( Object... keys ) {
         Object item = get( keys );
         if( item instanceof Boolean ) {
             return (Boolean)item;
         }
-        
+
         if( item == null ) {
             return null;
         }
@@ -235,46 +254,63 @@ public class Blob {
             if( len == 0 ) {
                 return Boolean.FALSE;
             }
-            
+
             switch( s.charAt( 0 ) ) {
             case 'y':
             case 'Y':
-                if( len == 1 || len >= 3 && s.substring( 0, 3 ).equalsIgnoreCase( "yes" ) ) {
+                if( len == 1 || len == 3 && s.substring( 0, 3 ).equalsIgnoreCase( "yes" ) ) {
                     return Boolean.TRUE;
                 }
                 break;
             case 't':
             case 'T':
-                if( len == 1 || len >= 4 && s.substring( 0, 4 ).equalsIgnoreCase( "true" ) ) {
+                if( len == 1 || len == 4 && s.equalsIgnoreCase( "true" ) ) {
                     return Boolean.TRUE;
                 }
                 break;
+            case 'n':
+            case 'N':
+                if( len == 1 || len == 2 && s.equalsIgnoreCase( "no" ) ) {
+                    return Boolean.FALSE;
+                }
+                break;
+            case 'f':
+            case 'F':
+                if( len == 1 || len == 5 && s.equalsIgnoreCase( "false" ) ) {
+                    return Boolean.FALSE;
+                }
+                break;
             }
-            
-            return Boolean.FALSE;
+            return null;
         }
-        
+
         if( item instanceof Number ) {
-            return new Boolean( ((Number)item).doubleValue() != 0 );
+            return ((Number)item).doubleValue() != 0;
         }
 
         return null;
     }
 
-
+    /**
+     * @return If value is an instance of {@link java.lang.Number}, that value is converted to an Integer and returned.
+     *         Otherwise {@code null}.
+     */
     public Integer getInt( Object... keys ) {
         Object item = get( keys );
         if( item instanceof Integer ) {
             return (Integer)item;
         }
         if( item instanceof Number ) {
-            return new Integer( ((Number)item).intValue() );
+            return ((Number)item).intValue();
         }
 
         return null;
     }
 
-
+    /**
+     * @return If value is an instance of {@link java.lang.Number}, that value is converted to a Long and returned.
+     *         Otherwise {@code null}.
+     */
     public Long getLong( Object... keys ) {
         Object item = get( keys );
         if( item instanceof Long ) {
@@ -287,7 +323,10 @@ public class Blob {
         return null;
     }
 
-
+    /**
+     * @return If value is an instance of {@link java.lang.Number}, that value is converted to a Float and returned.
+     *         Otherwise {@code null}.
+     */
     public Float getFloat( Object... keys ) {
         Object item = get( keys );
         if( item instanceof Float ) {
@@ -300,7 +339,10 @@ public class Blob {
         return null;
     }
 
-
+    /**
+     * @return If value is an instance of {@link java.lang.Number}, that value is converted to a Double and returned.
+     *         Otherwise {@code null}.
+     */
     public Double getDouble( Object... keys ) {
         Object item = get( keys );
         if( item instanceof Double ) {
@@ -314,12 +356,10 @@ public class Blob {
     }
 
     /**
-     * Like <tt>getString()</tt>, but returns a default value if no non-null
-     * value is found.
-     * 
-     * @param defaultVal
-     * @param keys
-     * @return
+     * @param defaultVal A default value to return if no value is found.
+     * @param keys       Key sequence.
+     * @return Value associated with {@code keys} if exists and is a String, otherwise {@code defaultVal}.
+     * @see #getString
      */
     public String tryGetString( String defaultVal, Object... keys ) {
         Object item = get( keys );
@@ -327,12 +367,12 @@ public class Blob {
     }
 
     /**
-     * Like <tt>getBoolean()</tt>, but returns a default value if no non-null
-     * value is found.
-     * 
-     * @param defaultVal
-     * @param keys
-     * @return
+     * @param defaultVal A default value to return if no value is found.
+     * @param keys       Key sequence.
+     * @return Value associated with {@code keys} if exists and is interpretable as a Boolean,
+     *         otherwise {@code defaultVal}.
+     *
+     * @see #getBoolean
      */
     public boolean tryGetBoolean( boolean defaultVal, Object... keys ) {
         Boolean b = getBoolean( keys );
@@ -340,12 +380,10 @@ public class Blob {
     }
 
     /**
-     * Like <tt>getInt()</tt>, but returns a default value if no non-null value
-     * is found.
-     * 
-     * @param defaultVal
-     * @param keys
-     * @return
+     * @param defaultVal A default value to return if no value is found.
+     * @param keys       Key sequence.
+     * @return Value associated with {@code keys} if exists and is a Number, otherwise {@code defaultVal}.
+     * @see #getInt
      */
     public int tryGetInt( int defaultVal, Object... keys ) {
         Integer ret = getInt( keys );
@@ -353,12 +391,10 @@ public class Blob {
     }
 
     /**
-     * Like <tt>getLong()</tt>, but returns a default value if no non-null value
-     * is found.
-     * 
-     * @param defaultVal
-     * @param keys
-     * @return
+     * @param defaultVal A default value to return if no value is found.
+     * @param keys       Key sequence.
+     * @return Value associated with {@code keys} if exists and is a Number, otherwise {@code defaultVal}.
+     * @see #getLong
      */
     public long tryGetLong( long defaultVal, Object... keys ) {
         Long ret = getLong( keys );
@@ -366,12 +402,10 @@ public class Blob {
     }
 
     /**
-     * Like <tt>getFloat()</tt>, but returns a default value if no non-null
-     * value is found.
-     * 
-     * @param defaultVal
-     * @param keys
-     * @return
+     * @param defaultVal A default value to return if no value is found.
+     * @param keys       Key sequence.
+     * @return Value associated with {@code keys} if exists and is a Number, otherwise {@code defaultVal}.
+     * @see #getFloat
      */
     public float tryGetFloat( float defaultVal, Object... keys ) {
         Float ret = getFloat( keys );
@@ -379,30 +413,27 @@ public class Blob {
     }
 
     /**
-     * Like <tt>getDouble()</tt>, but returns a default value if no non-null
-     * value is found.
-     * 
-     * @param defaultVal
-     * @param keys
-     * @return
+     * @param defaultVal A default value to return if no value is found.
+     * @param keys       Key sequence.
+     * @return Value associated with {@code keys} if exists and is a Number, otherwise {@code defaultVal}.
+     * @see #getDouble
      */
     public double tryGetDouble( double defaultVal, Object... keys ) {
         Double ret = getDouble( keys );
         return ret != null ? ret : defaultVal;
     }
-    
+
     /**
      * This operation is identicalto put(), except that the last key is implied.
-     * <p>
-     * If the keys specify a <code>map</code>, then the last key will be the key
+     *
+     * <p>If the keys specify a {@code Map}, the last key will be the key
      * and the value. (Key is mapped to itself).
-     * <p>
-     * If the keys specify a <code>list</code>, then the last key will be the
-     * integer size of the list.
-     * <p>
-     * If the keys specify a <code>set</code>, then no key needs will be
-     * implied, and the value will simply be added.
-     * 
+     *
+     * <p>If the keys specify a {@code List}, the value will be added to the
+     * list. This means there is an implied key: the integer size of the List.
+     *
+     * <p>If the keys specify a {@code Set}, the value is simply added.
+     *
      * @param keysAndValue Arbitrary sequence of keys followed by a value.
      * @return true iff Blob is modified as a result.
      */
@@ -417,23 +448,23 @@ public class Blob {
      * Puts object into a container at the specified key sequence in the Blob.
      * If no such container/key sequence exists in the Blob, it will be created,
      * overwriting existing data in the Blob as necessary. Keys that are
-     * <i>Integers</i> may correspond to <i>Lists</i> or <i>Maps</i>, while
-     * other keys will be made to correspond to <i>Maps</i> only.
-     * <p>
-     * Attempting to insert keys into a list where the key is:
+     * {@code Integers} may correspond to {@code Lists} or {@code Maps}, while
+     * other keys will be made to correspond to {@code Maps} only.
+     *
+     * <p>Attempting to insert keys into a list where the key is:
      * <ul>
      * <li>Not an integer</li>
      * <li>A negative integer</li>
-     * <li>An integer <code>n</code> where <code>n + 100 &gt list.size()</code></li>
+     * <li>An integer {@code n} where {@code n + 100 > list.size()}</li>
      * </ul>
      * will cause the list to be converted to a Map, where every item that was
      * in the List will be placed in the new Map using its list index as an
      * Integer key.
-     * <p>
-     * Attempting to insert any keys into a Set object will cause that Set to be
+     *
+     * <p>Attempting to insert any keys into a Set object will cause that Set to be
      * converted to a Map, where every item that was in the Set will be placed
      * in the new Map using itself as a key.
-     * 
+     *
      * @param keysAndValue Arbitrary sequence of keys followed by a value.
      * @return value that was previously located at specified key sequence
      */
@@ -447,6 +478,8 @@ public class Blob {
     /**
      * Removes object stored at specified key sequence. This may be used to
      * remove entire subtrees from the Blob.
+     *
+     * @return value that was removed, if any.
      */
     public Object remove( Object... keys ) {
         return remove( keys, 0, keys.length );
@@ -466,16 +499,16 @@ public class Blob {
     // **************************************************************
     // View Methods
     // **************************************************************
-    
+
     /**
      * Creates a view Blob from data in this Blob. Any changes that occur to the
      * view apply to this blob. Concurrent modifications (modifying the slice
      * after modifying this blob) has undefined results, and may throw a
      * ConcurrentModificationException.
-     * <p>
-     * Examples:
-     * <p>
-     * <code>
+     *
+     * <p>Examples:
+     *
+     * <p><code>
      * Blob blob = new Blob();  <br/>
      * blob.put("a", "b", 3);  <br/>
      * Blob slice = blob.slice("a");  <br/>
@@ -489,9 +522,9 @@ public class Blob {
      * blob.put("a", "c");  <br/>
      * slice.get("b"); <br/>
      * \\undefined result<br/>
-     * 
-     * @param keys
-     * @returns a Blob that acts as a view of a subset of this Blob.
+     * </code>
+     *
+     * @return a Blob that acts as a view of a subset of this Blob.
      */
     public Blob slice( Object... keys ) {
         Object item = get( keys );
@@ -500,17 +533,17 @@ public class Blob {
 
     /**
      * If this blob is a slice view, this method can be used to get the
-     * slice's path. While use of this method is discouraged as it 
+     * slice's path. While use of this method is discouraged as it
      * breaks the slice abstraction, it can be useful when you really
      * need the absolute path to a value, particularly when constructing
      * error messages.
-     * 
+     *
      * @return keys used to select this slice.
      */
     public Object[] sliceKeys() {
         return mPosition == null ? new Object[0] : mPosition.clone();
     }
-    
+
     /**
      * If this blob is a slice view, this method can be used to get the
      * parent blob. Use of this method is discouraged.
@@ -518,49 +551,62 @@ public class Blob {
     public Blob sliceParent() {
         return mParent;
     }
-    
 
+    /**
+     * Provides a view of a Set of keys. This is only valid if the object
+     * associated with {@code keys} is a Map or List (Lists are treated
+     * as Maps with keys that are sequential Integers).
+     *
+     * @param keys Key sequence
+     * @return View of associated collection, or {@code null}.
+     */
     public Set<?> keySet( Object... keys ) {
         Object item = get( keys );
-
         if( item instanceof Map ) {
             return ((Map<?, ?>)item).keySet();
         } else if( item instanceof List ) {
             return new ListIndexSet( (List<?>)item );
         }
-
         return Collections.emptySet();
     }
 
-
+    /**
+     * Provides a view of a Set of entries. This is only valid if the object
+     * associated with {@code keys} is a Map or List (Lists are treated as Maps with
+     * keys that are sequential Integers).
+     *
+     * @param keys Key sequence
+     * @return View of associated collection, or {@code null}.
+     */
     public Set<Map.Entry<?, ?>> entrySet( Object... keys ) {
         Object item = get( keys );
-
         if( item instanceof Map ) {
             return ((Map)item).entrySet();
 
         } else if( item instanceof List ) {
             return new ListEntrySet( (List<?>)item );
         }
-
         return Collections.emptySet();
     }
 
-
+    /**
+     * Provides a view of a Collection of values. This is only valid if the object
+     * associated with {@code keys} is a Map, List or Set.
+     *
+     * @param keys Key sequence
+     * @return View of associated collection, or {@code null}.
+     */
     public Collection<?> values( Object... keys ) {
         Object item = get( keys );
-
         if( item instanceof Map ) {
             return ((Map)item).values();
 
         } else if( item instanceof List ) {
             return (List)item;
-        
+
         } else if( item instanceof Set ) {
             return (Set)item;
-
         }
-
         return Collections.emptySet();
     }
 
@@ -576,8 +622,8 @@ public class Blob {
         format( "", b );
         return b.toString();
     }
-    
-    
+
+
     public void format( String indent, StringBuilder out ) {
         if( indent == null ) {
             indent = "";
@@ -586,25 +632,13 @@ public class Blob {
         out.append( "Blob: " );
         print( mRoot, out, indent + "  " );
     }
-    
-    
+
+
     public String toYaml() {
         return new Yaml().dump( mRoot );
     }
 
 
-    public String toJson() {
-        StringBuilder builder = new StringBuilder();
-        try {
-            json( this, builder );
-        } catch( IOException e ) {
-            e.printStackTrace();
-            return null;
-        }
-        return builder.toString();
-    }
-    
-    
     public void writeYaml( File outputFile ) throws IOException {
         Writer out = new BufferedWriter( new FileWriter( outputFile ) );
         writeYaml( new FileWriter( outputFile ) );
@@ -794,75 +828,6 @@ public class Blob {
     }
 
 
-    private void json( Object data, StringBuilder buf ) throws IOException {
-        if( data == null ) {
-            buf.append( "null" );
-
-        } else if( data instanceof Boolean ) {
-            buf.append( ((Boolean)data).toString() );
-
-        } else if( data instanceof Map ) {
-            Map<Object, Object> map = (Map<Object, Object>)data;
-
-            if( map.size() == 0 ) {
-                buf.append( "{}" );
-                return;
-            }
-
-            buf.append( "{" );
-            for( Iterator<Map.Entry<Object, Object>> it = map.entrySet().iterator(); it.hasNext(); ) {
-                Entry<Object, Object> e = it.next();
-                Object key = e.getKey();
-                if( !((key instanceof String) || (key instanceof Number)) )
-                    throw new IOException( "Map keys must be strings. Found key of type " + key.getClass().getName() );
-                json( key.toString(), buf );
-                buf.append( ":" );
-                json( e.getValue(), buf );
-                if( it.hasNext() )
-                    buf.append( "," );
-            }
-            buf.append( "}" );
-
-        } else if( data instanceof Collection ) {
-            Collection<Object> c = (Collection<Object>)data;
-
-            if( c.size() == 0 ) {
-                buf.append( "[]" );
-                return;
-            }
-
-            buf.append( "[" );
-            for( Iterator<Object> it = c.iterator(); it.hasNext(); ) {
-                json( it.next(), buf );
-                if( it.hasNext() )
-                    buf.append( "," );
-            }
-            buf.append( "]" );
-
-        } else if( data instanceof Blob ) {
-            json( ((Blob)data).mRoot, buf );
-
-        } else if( data instanceof String ) {
-            String s = ((String)data)
-                    .replace( "\\", "\\\\" )
-                    .replace( "\"", "\\\"" )
-                    .replace( "\b", "\\b" )
-                    .replace( "\f", "\\f" )
-                    .replace( "\n", "\\n" )
-                    .replace( "\r", "\\r" )
-                    .replace( "\t", "\\t" );
-
-            buf.append( '"' );
-            buf.append( s );
-            buf.append( '"' );
-
-        } else if( data instanceof Number ) {
-            buf.append( data.toString() );
-
-        } else {
-            throw new IOException( "Not a valid json type: " + data.getClass().getName() );
-        }
-    }
 
 
     private void print( Object data, StringBuilder buf, String indent ) {
@@ -920,7 +885,7 @@ public class Blob {
 
         } else if( data instanceof Blob ) {
             buf.append( '\n' );
-            ((Blob)data).print( buf, indent + "  " );
+            ((Blob)data).format( indent + "  ", buf );
 
         } else {
             buf.append( data.toString() );
@@ -950,6 +915,8 @@ public class Blob {
     }
 
 
+    private static final Pattern JSON_ESCAPE_PAT = Pattern.compile( "[\"\b\f\n\r\t]", Pattern.MULTILINE );
+
 
     // **************************************************************
     // Low-level operations.
@@ -965,28 +932,31 @@ public class Blob {
 
 
     private static boolean keyFits( Object key, Object data ) {
-        if( data == null )
+        if( data == null ) {
             return false;
-
-        if( data instanceof Map )
+        }
+        if( data instanceof Map ) {
             return true;
+        }
 
         if( data instanceof List ) {
-            if( key == ADD_KEY )
+            if( key == ADD_KEY ) {
                 return true;
-
-            if( !(key instanceof Integer) )
+            }
+            if( !(key instanceof Integer) ) {
                 return false;
-
-            int n = ((Integer)key).intValue();
+            }
+            int n = (Integer)key;
             return n >= 0 && n - MAX_LIST_PADDING < ((List)data).size();
         }
 
-        if( data instanceof Set )
+        if( data instanceof Set ) {
             return key == ADD_KEY;
+        }
 
-        if( data instanceof Blob )
+        if( data instanceof Blob ) {
             return true;
+        }
 
         return false;
     }
@@ -997,7 +967,7 @@ public class Blob {
             return new ArrayList<Object>();
 
         if( key instanceof Integer ) {
-            int n = ((Integer)key).intValue();
+            int n = (Integer)key;
             if( n >= 0 && n < MAX_LIST_PADDING ) {
                 return new ArrayList<Object>();
             }
@@ -1188,7 +1158,6 @@ public class Blob {
         }
 
 
-
         public int hashCode() {
             return (mKey == null ? 0 : mKey.hashCode()) ^
                    (mValue == null ? 0 : mValue.hashCode());
@@ -1288,7 +1257,7 @@ public class Blob {
 
 
     static final class ToEntryIterator implements Iterator<Map.Entry<?, ?>> {
-        
+
         private final Iterator<?> mIter;
 
 
@@ -1311,7 +1280,7 @@ public class Blob {
         }
 
     }
-    
+
 
     static abstract class WrapperSet<E> extends AbstractSet<E> {
 
@@ -1321,7 +1290,7 @@ public class Blob {
         WrapperSet( Collection<?> container ) {
             mContainer = container;
         }
-        
+
 
         public void clear() {
             mContainer.clear();
@@ -1353,7 +1322,6 @@ public class Blob {
         ListIndexSet( List list ) {
             super( list );
         }
-
 
 
         public boolean contains( Object obj ) {
@@ -1441,15 +1409,14 @@ public class Blob {
     }
 
 
-    
 
     // **************************************************************
     // Deprecated graveyard.
     // **************************************************************
-    
+
     /**
      * @deprecated Use values(keys).iterator() instead.
-     * 
+     *
      *             <p>
      *             Gets iterator over values at a location in the blob. Iterator
      *             stays at specified level and does not descennd. <br/>
@@ -1458,7 +1425,7 @@ public class Blob {
      *             For <i>collections</i>, equivalent to <code>iterator()</code>
      *             . <br/>
      *             Otherwise, an empty iterator is returned.
-     * 
+     *
      * @param keys
      *            Location in blob over which to iterate.
      * @return iterator over values
@@ -1477,7 +1444,7 @@ public class Blob {
      *             For <i>collections</i>, equivalent to <code>iterator()</code>
      *             . <br/>
      *             Otherwise, an empty iterator is returned.
-     * 
+     *
      * @param keys
      *            Location in blob over which to iterate.
      * @return iterator over values
@@ -1486,11 +1453,28 @@ public class Blob {
         return entrySet( keys ).iterator();
     }
 
+
+
+    /**
+     * Although convenient, the string escaping on this is very primitive and may give you corrupted JSON.
+     */
+    @Deprecated
+    public String toJson() {
+        StringBuilder builder = new StringBuilder();
+        try {
+            json( this, builder );
+        } catch( IOException e ) {
+            e.printStackTrace();
+            return null;
+        }
+        return builder.toString();
+    }
+
     @Deprecated
     public void print( StringBuilder buf, String indent ) {
         format( indent, buf );
     }
-    
+
     @Deprecated
     public String toYamlString() {
         return toYaml();
@@ -1500,7 +1484,7 @@ public class Blob {
     public String toJsonString() {
         return toJson();
     }
-   
+
     @Deprecated
     public void saveToYaml( File outputFile ) throws IOException {
         writeYaml( outputFile );
@@ -1510,7 +1494,7 @@ public class Blob {
     public void saveToYaml( Writer writer ) throws IOException {
         writeYaml( writer );
     }
-    
+
     @Deprecated
     public static Blob loadFromYaml( File inputFile ) throws IOException {
         return readYaml( inputFile );
@@ -1530,5 +1514,76 @@ public class Blob {
     public static Blob loadFromYaml( String yamlText ) throws IOException {
         return readYaml( yamlText );
     }
-    
+
+    @Deprecated
+    private void json( Object data, StringBuilder buf ) throws IOException {
+        if( data == null ) {
+            buf.append( "null" );
+
+        } else if( data instanceof Boolean ) {
+            buf.append( ((Boolean)data).toString() );
+
+        } else if( data instanceof Map ) {
+            Map<Object, Object> map = (Map<Object, Object>)data;
+
+            if( map.size() == 0 ) {
+                buf.append( "{}" );
+                return;
+            }
+
+            buf.append( "{" );
+            for( Iterator<Map.Entry<Object, Object>> it = map.entrySet().iterator(); it.hasNext(); ) {
+                Entry<Object, Object> e = it.next();
+                Object key = e.getKey();
+                if( !((key instanceof String) || (key instanceof Number)) )
+                    throw new IOException( "Map keys must be strings. Found key of type " + key.getClass().getName() );
+                json( key.toString(), buf );
+                buf.append( ":" );
+                json( e.getValue(), buf );
+                if( it.hasNext() )
+                    buf.append( "," );
+            }
+            buf.append( "}" );
+
+        } else if( data instanceof Collection ) {
+            Collection<Object> c = (Collection<Object>)data;
+
+            if( c.size() == 0 ) {
+                buf.append( "[]" );
+                return;
+            }
+
+            buf.append( "[" );
+            for( Iterator<Object> it = c.iterator(); it.hasNext(); ) {
+                json( it.next(), buf );
+                if( it.hasNext() )
+                    buf.append( "," );
+            }
+            buf.append( "]" );
+
+        } else if( data instanceof Blob ) {
+            json( ((Blob)data).mRoot, buf );
+
+        } else if( data instanceof String ) {
+            String s = ((String)data)
+                    .replace( "\\", "\\\\" )
+                    .replace( "\"", "\\\"" )
+                    .replace( "\b", "\\b" )
+                    .replace( "\f", "\\f" )
+                    .replace( "\n", "\\n" )
+                    .replace( "\r", "\\r" )
+                    .replace( "\t", "\\t" );
+
+            buf.append( '"' );
+            buf.append( s );
+            buf.append( '"' );
+
+        } else if( data instanceof Number ) {
+            buf.append( data.toString() );
+
+        } else {
+            throw new IOException( "Not a valid json type: " + data.getClass().getName() );
+        }
+    }
+
 }
