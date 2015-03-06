@@ -225,15 +225,15 @@ public class Blob {
     }
 
     /**
-     * Makes best effort to interpret a value as a boolean.
-     *
-     * <p>True values are True booleans, any {@link java.lang.Number} that does not equal zero, and any of the Strings
+     * Makes a best effort to interpret a value as a boolean.
+     * <p>
+     * True values are true booleans, any {@link java.lang.Number} that does not equal zero, and any of the Strings
      * "y", "yes", "t" or "true" with any case.
-     *
-     * <p>False values are False booleans, any {@link java.lang.Number} that equals zero, and any of the strings
+     * <p>
+     * False values are False booleans, any {@link java.lang.Number} that equals zero, and any of the strings
      * "n", "no", "f" or "false" with any case.
-     *
-     * <p>Other values are considered undefined as booleans and a {@code null} will be returned.
+     * <p>
+     * Other values are considered undefined as booleans and a {@code null} will be returned.
      *
      * @return true if keys are associated with a value interpretable as true, false if a value intepretabel as false,
      *         otherwise {@code null}.
@@ -355,6 +355,18 @@ public class Blob {
         return null;
     }
 
+
+    /**
+     * @param defaultVal A default value to return if no value is found.
+     * @param keys       Key sequence.
+     * @return Value associated with {@code keys} if not-null, otherwise {@code defaultVal}.
+     * @see #get
+     */
+    public Object tryGet( Object defaultVal, Object... keys ) {
+        Object item = get( keys );
+        return item != null ? item : defaultVal;
+    }
+
     /**
      * @param defaultVal A default value to return if no value is found.
      * @param keys       Key sequence.
@@ -422,6 +434,148 @@ public class Blob {
         Double ret = getDouble( keys );
         return ret != null ? ret : defaultVal;
     }
+
+    /**
+     * Like {@code #get}, but throws an IOException if object is null.
+     * <p>
+     * The purpose of the {@code force} methods is to make it easier to throw
+     * readable parse exceptions when required, rather than force the user to
+     * check the return results after each query.
+     *
+     * @param keys key sequence
+     * @return Value associated with {@code keys}.
+     * @throws IOException if value is undefined or null.
+     * @see #get
+     */
+    public Object forceGet( Object... keys ) throws IOException {
+        Object obj = get( keys );
+        if( obj != null ) {
+            return obj;
+        }
+        throw new IOException( formatKeys( keys ) + " not defined.");
+    }
+
+    /**
+     * Like {@code #getBoolean}, but throws an IOException if boolean cannot be returned.
+     * <p>
+     * The purpose of the {@code force} methods is to make it easier to throw
+     * readable parse exceptions when required, rather than force the user to
+     * check the return results after each query.
+     *
+     * @param keys key sequence
+     * @return Value associated with {@code keys}.
+     * @throws IOException if value is undefined or not interpretable as a boolean.
+     * @see #getBoolean
+     */
+    public boolean forceGetBoolean( Object... keys ) throws IOException {
+        Boolean ret = getBoolean( keys );
+        if( ret != null ) {
+            return ret;
+        }
+        throw new IOException( formatKeys( keys ) + " not defined or not interpretable as a boolean.");
+    }
+
+    /**
+     * Like {@code #getInt}, but throws an IOException if an int cannot be returned.
+     * <p>
+     * The purpose of the {@code force} methods is to make it easier to throw
+     * readable parse exceptions when required, rather than force the user to
+     * check the return results after each query.
+     *
+     * @param keys key sequence
+     * @return Value associated with {@code keys}.
+     * @throws IOException if value is undefined or not interpretable as an integer.
+     * @see #getInt
+     */
+    public int forceGetInt( Object... keys ) throws IOException {
+        Integer ret = getInt( keys );
+        if( ret != null ) {
+            return ret;
+        }
+        throw new IOException( formatKeys( keys ) + " not defined or not interpretable as an integer.");
+    }
+
+    /**
+     * Like {@code #getLong}, but throws an IOException if a long cannot be returned.
+     * <p>
+     * The purpose of the {@code force} methods is to make it easier to throw
+     * readable parse exceptions when required, rather than force the user to
+     * check the return results after each query.
+     *
+     * @param keys key sequence
+     * @return Value associated with {@code keys}.
+     * @throws IOException if value is undefined or not interpretable as a long.
+     * @see #getLong
+     */
+    public long forceGetLong( Object... keys ) throws IOException {
+        Long ret = getLong( keys );
+        if( ret != null ) {
+            return ret;
+        }
+        throw new IOException( formatKeys( keys ) + " not defined or not interpretable as a long integer.");
+    }
+
+    /**
+     * Like {@code #getFloat}, but throws an IOException if a float cannot be returned.
+     * <p>
+     * The purpose of the {@code force} methods is to make it easier to throw
+     * readable parse exceptions when required, rather than force the user to
+     * check the return results after each query.
+     *
+     * @param keys key sequence
+     * @return Value associated with {@code keys}.
+     * @throws IOException if value is undefined or not interpretable as a float.
+     * @see #getFloat
+     */
+    public float forceGetFloat( Object... keys ) throws IOException {
+        Float ret = getFloat( keys );
+        if( ret != null ) {
+            return ret;
+        }
+        throw new IOException( formatKeys( keys ) + " not defined or not interpretable as a float.");
+    }
+
+    /**
+     * Like {@code #getDouble}, but throws an IOException if a double cannot be returned.
+     * <p>
+     * The purpose of the {@code force} methods is to make it easier to throw
+     * readable parse exceptions when required, rather than force the user to
+     * check the return results after each query.
+     *
+     * @param keys key sequence
+     * @return Value associated with {@code keys}.
+     * @throws IOException if value is undefined or not interpretable as a double.
+     * @see #getFloat
+     */
+    public double forceGetDouble( Object... keys ) throws IOException {
+        Double ret = getDouble( keys );
+        if( ret != null ) {
+            return ret;
+        }
+        throw new IOException( formatKeys( keys ) + " not defined or not interpretable as a double.");
+    }
+
+    /**
+     * Like {@code #getDouble}, but throws an IOException if a String cannot be returned.
+     * <p>
+     * The purpose of the {@code force} methods is to make it easier to throw
+     * readable parse exceptions when required, rather than force the user to
+     * check the return results after each query.
+     *
+     * @param keys key sequence
+     * @return Value associated with {@code keys}.
+     * @throws IOException if value is undefined or not a string.
+     * @see #getString
+     */
+    public String forceGetString( Object... keys ) throws IOException {
+        String ret = getString( keys );
+        if( ret != null ) {
+            return ret;
+        }
+        throw new IOException( formatKeys( keys ) + " not defined or not a string.");
+    }
+
+
 
     /**
      * This operation is identicalto put(), except that the last key is implied.
@@ -631,6 +785,21 @@ public class Blob {
         out.append( indent );
         out.append( "Blob: " );
         print( mRoot, out, indent + "  " );
+    }
+
+
+    public String formatKeys(  Object... keys ) {
+        StringBuilder s = new StringBuilder();
+        boolean first = true;
+        for( Object k: keys ) {
+            if( !first ) {
+                s.append( ":" );
+            }
+            s.append( k == null ? "<null>" : k.toString() );
+            first = false;
+        }
+
+        return s.toString();
     }
 
 
