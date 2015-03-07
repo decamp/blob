@@ -6,6 +6,7 @@
 package bits.blob;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.junit.*;
 
@@ -155,6 +156,23 @@ public class BlobTest {
         assertEquals( 0, b1.size( "s" ) );
 
     }
+
+
+    @Test public void testSliceForceGet() {
+        Blob a = new Blob();
+        a.put( "x", "y", "z" );
+        Blob b = a.slice( "x" );
+
+        try {
+            b.forceGetString( "n" );
+            assertTrue( "Failed to throw appropriate exception", false );
+        } catch( IOException ex ) {
+            String m = ex.getMessage();
+            assertTrue( m.startsWith( "x:n" ) );
+        }
+
+    }
+
 
 
     public void testLoad() {

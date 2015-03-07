@@ -452,7 +452,7 @@ public class Blob {
         if( obj != null ) {
             return obj;
         }
-        throw new IOException( formatKeys( keys ) + " not defined.");
+        throw new IOException( formatKeys( true, keys ) + " not defined.");
     }
 
     /**
@@ -472,7 +472,7 @@ public class Blob {
         if( ret != null ) {
             return ret;
         }
-        throw new IOException( formatKeys( keys ) + " not defined or not interpretable as a boolean.");
+        throw new IOException( formatKeys( true, keys )  + " not defined or not interpretable as a boolean.");
     }
 
     /**
@@ -492,7 +492,7 @@ public class Blob {
         if( ret != null ) {
             return ret;
         }
-        throw new IOException( formatKeys( keys ) + " not defined or not interpretable as an integer.");
+        throw new IOException( formatKeys( true, keys )  + " not defined or not interpretable as an integer.");
     }
 
     /**
@@ -512,7 +512,7 @@ public class Blob {
         if( ret != null ) {
             return ret;
         }
-        throw new IOException( formatKeys( keys ) + " not defined or not interpretable as a long integer.");
+        throw new IOException( formatKeys( true, keys )  + " not defined or not interpretable as a long integer.");
     }
 
     /**
@@ -532,7 +532,7 @@ public class Blob {
         if( ret != null ) {
             return ret;
         }
-        throw new IOException( formatKeys( keys ) + " not defined or not interpretable as a float.");
+        throw new IOException( formatKeys( true, keys ) + " not defined or not interpretable as a float.");
     }
 
     /**
@@ -552,7 +552,7 @@ public class Blob {
         if( ret != null ) {
             return ret;
         }
-        throw new IOException( formatKeys( keys ) + " not defined or not interpretable as a double.");
+        throw new IOException( formatKeys( true, keys ) + " not defined or not interpretable as a double.");
     }
 
     /**
@@ -572,7 +572,7 @@ public class Blob {
         if( ret != null ) {
             return ret;
         }
-        throw new IOException( formatKeys( keys ) + " not defined or not a string.");
+        throw new IOException( formatKeys( true, keys ) + " not defined or not a string.");
     }
 
 
@@ -788,17 +788,9 @@ public class Blob {
     }
 
 
-    public String formatKeys(  Object... keys ) {
+    public String formatKeys( boolean absolute, Object... keys ) {
         StringBuilder s = new StringBuilder();
-        boolean first = true;
-        for( Object k: keys ) {
-            if( !first ) {
-                s.append( ":" );
-            }
-            s.append( k == null ? "<null>" : k.toString() );
-            first = false;
-        }
-
+        doFormatKeys( absolute, keys, s );
         return s.toString();
     }
 
@@ -1070,6 +1062,26 @@ public class Blob {
         mRoot = root;
         if( mParent != null ) {
             mParent.put( mPosition, 0, mPosition.length, root );
+        }
+    }
+
+
+    private void doFormatKeys( boolean absolute, Object[] keys, StringBuilder out ) {
+        if( absolute ) {
+            if( mParent != null ) {
+                mParent.doFormatKeys( true, mPosition, out );
+            }
+        }
+
+        if( keys == null ) {
+            return;
+        }
+
+        for( Object k: keys ) {
+            if( out.length() != 0 ) {
+                out.append( ':' );
+            }
+            out.append( k == null ? "<null>" : k.toString() );
         }
     }
 
