@@ -258,7 +258,7 @@ public class Blob {
             switch( s.charAt( 0 ) ) {
             case 'y':
             case 'Y':
-                if( len == 1 || len == 3 && s.substring( 0, 3 ).equalsIgnoreCase( "yes" ) ) {
+                if( len == 1 || len == 3 && s.equalsIgnoreCase( "yes" ) ) {
                     return Boolean.TRUE;
                 }
                 break;
