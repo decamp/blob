@@ -2,23 +2,13 @@
 
 BLOB is a single class.  
 BLOB is a flexible container that operates on nested Maps, Lists, Sets, and primitives.  
-BLOB is an API for reading/writing/manipulating YAML/JSON files.  
-BLOB is wizardly.  
-BLOB is life.  
+BLOB is an API for manipulating YAML/JSON data.  
 
-Blob is container class for reading/writing/manipulating YAML data.
-YAML is a lightweight markup language that makes XML users feel bad about themselves. 
-However, it produces nested object collections that can be extremely annoying to deal with in java. 
-It was not until the PROMETHIAN INVENTION of BLOB that the full POWER OF YAML was given unto 
-statically-typed-language-using part of mankind.
-
-This library includes SnakeYAML, an open-source YAML library, with BLOB,
-a custom data container class. SnakeYAML provides a means for reading and writing to 
-YAML files, while BLOB provides THE MOST CONVENIENT means for manipulating such data
-KNOWN TO MAN OR WOMAN! 
-
-YAML is a superset of JSON. YOU CAN USE THIS LIBRARY TO READ JSON FILES. 
-For writing to JSON, another library would be needed.
+Blob is single class: a container for manipulating JSON or YAML data.
+YAML and JSON are great, but produce nested object collections that can be 
+difficult to work with in Java because every of all the type checking and
+casting required. Blob simplifies the process and makes it possible to
+working with nested data structures with minimal coding.
 
 
 ### Build:
@@ -30,7 +20,10 @@ After build, add all jars in **lib** and **target** directories to your project.
 
 
 ### Dependencies:
-SnakeYAML. It's easy enough to swap out other YAML/JSON libraries though.
+SnakeYAML. 
+
+It's easy enough to swap out other YAML/JSON libraries though. I've used Blob
+with Jackson, JSONObject, and a couple of others.
 
 
 ### Licenses:
